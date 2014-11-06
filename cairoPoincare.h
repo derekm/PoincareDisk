@@ -28,8 +28,8 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include <complex>
-#include <limits>
+#include <float.h>
+#include <stdbool.h>
 
 
 //Size of the cairo board
@@ -38,12 +38,10 @@
 //Radius of the "unit" disk
 #define RAD 400.0
 
-#define EDGEWIDTH 0.5
+//#define EDGEWIDTH 0.5
+#define EDGEWIDTH 2
 #define POINTRADIUS 3
 
-
-//#define EPSILON  0.0001
-static const double EPSILON = std::numeric_limits<double>::epsilon();
 
 //Global drawing board
 cairo_surface_t *CSglobal;
@@ -51,22 +49,8 @@ cairo_t *cairo;
 
 
 
-struct Point{
-
-  Point(double xx, double yy): myX(xx),myY(yy)
-  {}
-
-  Point(std::complex<double> p): myX(p.real()),myY(p.imag())
-  {}
-
-  double x() const
-  {return myX;}
-
-  double y() const
-  {return myY;}
-
-
-  double myX,myY;
+struct point {
+  double X, Y;
 };
 
 
@@ -84,25 +68,33 @@ double cY(double y)
 /**
  * Draw a point in the Poincaré Disk
  *
+ * @param cr the Cairo context on which to draw
  * @param a the point to plot
  * @param r red value
  * @param g green value
  * @param b blue value
- * @param alpha transparency
+ * @param alpha transparency value
  */
-template <typename Point>
-void drawPoint(cairo_t *cr, const Point &a, const double r=0.0, const double g=0.0, const double b=0.0, const double alpha=0.5)
+void drawPointCairoColor(cairo_t *cr, struct point const *const a,
+                         const double r, const double g, const double b, const double alpha)
 {
   cairo_set_source_rgba (cr, r, g, b, alpha);
   cairo_set_line_width (cr, 0.5);
-  cairo_arc(cr, cX(a.x()),cY(a.y()), POINTRADIUS, 0, 2*M_PI);
+  cairo_arc(cr, cX(a->X),cY(a->Y), POINTRADIUS, 0, 2*M_PI);
   cairo_fill (cr);
   cairo_stroke(cr);
 }
-template <typename Point>
-void drawPoint(const Point &a, const double r=0.0, const double g=0.0, const double b=0.0, const double alpha=0.5)
+
+const double red=0.0, green=0.0, blue=0.0, alpha=0.5;
+
+void drawPointCairo(cairo_t *cr, struct point const *const a)
 {
-  drawPoint(cairo, a, r, g, b, alpha);
+  drawPointCairoColor(cr, a, red, green, blue, alpha);
+}
+
+void drawPoint(struct point const *const a)
+{
+  drawPointCairoColor(cairo, a, red, green, blue, alpha);
 }
 
 
@@ -120,12 +112,12 @@ void drawPoint(const Point &a, const double r=0.0, const double g=0.0, const dou
  * @return true if the output is a circle. False if the shortest path
  * is a straight line (diameter of the unit circle).
  */
-template <typename Point>
-bool computeCircleParameters(const Point &a, const Point &b, double *cx, double *cy, double *radius)
+bool computeCircleParameters(struct point const *const a, struct point const *const b,
+                             double *const cx, double *const cy, double *const radius)
 {
-  double ax=a.x(), ay=a.y(), bx=b.x(), by=b.y();
+  const double ax=a->X, ay=a->Y, bx=b->X, by=b->Y;
 
-  if (fabs(ax*by - ay*bx) < EPSILON )
+  if (fabs(ax*by - ay*bx) < DBL_EPSILON)
     return false;
 
   *cx = (-1/2.0*(ay*bx*bx + ay*by*by
@@ -168,10 +160,11 @@ bool computeCircleParameters(const Point &a, const Point &b, double *cx, double 
  * using the circle parameters.
  *
  */
-void computeOmegaPoints(const double &cx, const double &cy, const double &r, double *theta1, double *theta2)
+void computeOmegaPoints(double const *const cx, double const *const cy, double const *const r,
+                        double *const theta1, double *const theta2)
 {
-  double dtheta = atan2(r, 1);
-  double theta = std::arg(std::complex<double>(cx, cy));
+  const double dtheta = atan2(*r, 1);
+  double theta = atan2(*cy, *cx);
   if (theta<0) theta+=2*M_PI;
   *theta1 = theta - dtheta;
   *theta2 = theta + dtheta;
@@ -184,10 +177,11 @@ void computeOmegaPoints(const double &cx, const double &cy, const double &r, dou
  * draws.
  *
  */
-void computeIntersectAngles(const double &cx, const double &cy, const double &r, double *phi1, double *phi2)
+void computeIntersectAngles(double const *const cx, double const *const cy, double const *const r,
+                            double *const phi1, double *const phi2)
 {
-  double dphi = atan2(1, r);
-  double itheta = std::arg(std::complex<double>(cx, cy));
+  const double dphi = atan2(1, *r);
+  double itheta = atan2(*cy, *cx);
   if (itheta < 0) itheta += 2*M_PI;
   if (itheta >= M_PI) itheta -= M_PI;
   else if (itheta < M_PI) itheta += M_PI;
@@ -200,20 +194,20 @@ void computeIntersectAngles(const double &cx, const double &cy, const double &r,
 /**
  * Draw the hyperbolic line through a and b.
  *
+ * @param cr the Cairo context on which to draw
  * @param a first point.
  * @param b second point.
  * @param withPoint true means that  points are also displayed.
  */
-template <typename Point>
-void drawLine(cairo_t *cr, const Point &a, const Point &b, bool withPoint=true  )
+void drawLineCairo(cairo_t *cr, struct point const *const a, struct point const *const b, bool withPoint)
 {
   if (withPoint)
     {
-      drawPoint(cr, a);
-      drawPoint(cr, b);
+      drawPointCairo(cr, a);
+      drawPointCairo(cr, b);
     }
 
-  double ax=a.x(), ay=a.y(), bx=b.x(), by=b.y();
+  const double ax=a->X, ay=a->Y, bx=b->X, by=b->Y;
   double cx,cy,r;
 
   bool result = computeCircleParameters(a,b,&cx,&cy,&r);
@@ -224,8 +218,8 @@ void drawLine(cairo_t *cr, const Point &a, const Point &b, bool withPoint=true  
       cairo_set_line_width (cr, 0.5);
 
       //We project a and b points onto the unit circle.
-      double theta = atan2(ay,ax);
-      double theta2 = atan2(by,bx);
+      const double theta = atan2(ay,ax);
+      const double theta2 = atan2(by,bx);
 
       cairo_move_to (cr, cX(cos(theta)),cY(sin(theta)));
       cairo_line_to (cr, cX(cos(theta2)),cY(sin(theta2)));
@@ -234,17 +228,17 @@ void drawLine(cairo_t *cr, const Point &a, const Point &b, bool withPoint=true  
   else
     {
       double theta1, theta2;
-      computeIntersectAngles(cx, cy, r, &theta1, &theta2);
+      computeIntersectAngles(&cx, &cy, &r, &theta1, &theta2);
       cairo_set_source_rgba (cr, 0, 0.6, 0, 0.5);
       cairo_set_line_width (cr, EDGEWIDTH);
       cairo_arc(cr, cX(cx),cY(cy), r*RAD, theta1, theta2);
       cairo_stroke(cr);
     }
 }
-template <typename Point>
-void drawLine(const Point &a, const Point &b, bool withPoint=true  )
+
+void drawLine(struct point const *const a, struct point const *const b, bool withPoint)
 {
-  drawLine(cairo, a, b, withPoint);
+  drawLineCairo(cairo, a, b, withPoint);
 }
 
 
@@ -255,8 +249,7 @@ void drawLine(const Point &a, const Point &b, bool withPoint=true  )
  * @param b second point.
  * @param withPoint if true, points are displayed.
  */
-template <typename Point>
-void internaldrawEdge(const Point &a, const Point &b, bool withPoint )
+void internaldrawEdge(struct point const *const a, struct point const *const b, bool withPoint)
 {
   if (withPoint)
     {
@@ -264,7 +257,7 @@ void internaldrawEdge(const Point &a, const Point &b, bool withPoint )
       drawPoint(b);
     }
 
-  double ax=a.x(), ay=a.y(), bx=b.x(), by=b.y();
+  const double ax=a->X, ay=a->Y, bx=b->X, by=b->Y;
   double cx,cy,r;
   bool result  = computeCircleParameters(a,b,&cx,&cy,&r);
 
@@ -307,8 +300,7 @@ void internaldrawEdge(const Point &a, const Point &b, bool withPoint )
  * @param b second point
  * @param withPoints if true, points are displayed.
  */
-template<typename Point>
-void drawEdge(const Point &a, const Point &b, const bool withPoints=true)
+void drawEdge(struct point const *const a, struct point const *const b, const bool withPoints)
 {
   cairo_set_source_rgba (cairo, 0, 0.0, 1, 0.8);
   cairo_set_line_width (cairo, EDGEWIDTH);
@@ -330,9 +322,8 @@ void drawEdge(const Point &a, const Point &b, const bool withPoints=true)
  * @param withPoint if true, points are displayed.
  * @param withSupportLines if true, supporting line are displayed.
  */
-template<typename Point>
-void drawTriangle(const Point &a, const Point &b, const Point &c,
-		  const double r= 0, const double g=0, const double bl= 1.0,
+void drawTriangle(struct point const *const a, struct point const *const b, struct point const *const c,
+		  const double r=0, const double g=0, const double bl=1.0,
 		  const bool withPoint=true, const bool withSupportLines=true)
 {
   if (withPoint)
@@ -370,12 +361,8 @@ void drawTriangle(const Point &a, const Point &b, const Point &c,
  * Draw the unit circle and clip every cairo drawning to it.
  *
  */
-void drawUnitCircle(cairo_t *cr, bool reset=false)
+void drawUnitCircleCairo(cairo_t *cr)
 {
-  if (reset) {
-    cairo_set_source_rgb(cr, 255, 255, 255);
-    cairo_paint(cr);
-  }
   cairo_arc(cr, cX(0),cY(0), RAD, 0, 2*M_PI);
   cairo_clip (cr);
   cairo_new_path (cr); /* path not consumed by clip()*/
@@ -388,7 +375,7 @@ void drawUnitCircle(cairo_t *cr, bool reset=false)
 }
 void drawUnitCircle()
 {
-  drawUnitCircle(cairo);
+  drawUnitCircleCairo(cairo);
 }
 
 /**
@@ -396,7 +383,7 @@ void drawUnitCircle()
  *
  * @param fname
  */
-void initPDF(const char *fname)
+void initPDF(char const *const fname)
 {
   CSglobal=cairo_pdf_surface_create(fname, SIZEX+20, SIZEY+20);
   cairo=cairo_create(CSglobal);

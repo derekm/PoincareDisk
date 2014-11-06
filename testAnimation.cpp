@@ -3,7 +3,7 @@
 #include <complex>
 //#include <limits>
 //#include <iostream>
-#include "cairoPoincare.h"
+#include "cairoPoincare++.h"
 
 #define WINDOW_WIDTH  1000
 #define WINDOW_HEIGHT 1000
@@ -20,7 +20,7 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
   //     poincare.plot(list(r=ii, rad=five2*i), list(r=ii, rad=five2*(i+2)),F);
   //   }
   // }
-  static const int points = 5;
+  static const int points = 12;
   //static const double epsilon = std::numeric_limits<double>::epsilon();
   static const double delta = 2*M_PI / points;
   static double r = 1.0;
@@ -28,9 +28,11 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
   static const double r_upper = r_inc;
   static const double r_lower = -(r_inc*2);
   static double rot = M_PI/2;
-  //static const double rot_inc = r_inc;
+  //static const double rot_inc = 0.0025;
 
-  drawUnitCircle(cr, true);
+  cairo_set_source_rgb(cr, 255, 255, 255);
+  cairo_paint(cr);
+  drawUnitCircle(cr);
 
   //if (r == 1.0 || r < 0.2) r_inc = r_inc * -1;
   if (r == 1.0 || r < -1.0) r_inc = r_inc * -1;
@@ -39,8 +41,16 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
   for (int i = 1; i <= points; ++i) {
     drawLine(cr, Point(std::polar(r,delta*i+rot)), Point(std::polar(r,delta*(i+1)+rot)));
     drawLine(cr, Point(std::polar(r,delta*i+rot)), Point(std::polar(r,delta*(i+2)+rot)));
+    drawLine(cr, Point(std::polar(r,delta*i+rot)), Point(std::polar(r,delta*(i+3)+rot)));
+    drawLine(cr, Point(std::polar(r,delta*i+rot)), Point(std::polar(r,delta*(i+4)+rot)));
+    drawLine(cr, Point(std::polar(r,delta*i+rot)), Point(std::polar(r,delta*(i+5)+rot)));
+    //drawLine(cr, Point(std::polar(r,delta*i+rot)), Point(std::polar(r,delta*(i+6)+rot)));
   }
-//std::cout<<"epsilon="<<epsilon<<" r_inc="<<r_inc<<" r="<<r<<" diff="<<fabs(r-0.2)<<" bool="<<(bool)(fabs(r-0.2)>fabs(r_inc))<<" rot="<<rot<<std::endl;
+
+//std::cout<<"epsilon="<<epsilon;
+//std::cout<<" r_inc="<<r_inc<<" r="<<r<<" diff="<<fabs(r-0.2)<<" bool="<<(bool)(fabs(r-0.2)>fabs(r_inc))<<" rot="<<rot;
+//std::cout<<" abs(r)="<<fabs(r);
+//std::cout<<std::endl;
 
   if (r > r_lower && r <= r_upper) r += r_inc; // skip r ~= 0
   r += r_inc;

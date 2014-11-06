@@ -26,7 +26,8 @@
 
 #include <iostream>
 #include <complex>
-#include "cairoPoincare.h"
+//#include "cairoPoincare.h"
+#include "cairoPoincare++.h"
 
 
 
@@ -63,12 +64,12 @@ int main()
 
   initPDF("poincare-edge.pdf");
   drawUnitCircle();
-  drawEdge(Point(0.5,0.5), Point(-0.6,0.2),true);
+  drawEdge(new Point(0.5,0.5), new Point(-0.6,0.2),true);
   flushPDF();
 
   initPDF("poincare-edgeline.pdf");
   drawUnitCircle();
-  drawLine(Point(0.5,0.5), Point(-0.6,0.2),true);
+  drawLine(new Point(0.5,0.5), new Point(-0.6,0.2),true);
   flushPDF();
 
   initPDF("poincare-example.pdf");
@@ -83,57 +84,57 @@ int main()
 
   initPDF("poincare-triangle.pdf");
   drawUnitCircle();
-  drawTriangle(Point(0.8,-0.3),Point(0.2,-0.6), Point(-0.61,-0.6), 1, 0, 0);
+  drawTriangle(new Point(0.8,-0.3),new Point(0.2,-0.6), new Point(-0.61,-0.6), 1, 0, 0);
   flushPDF();
 
   initPDF("poincare-triangle2.pdf");
   drawUnitCircle();
-  drawTriangle(Point(0.1,0.5),Point(0.2,-0.6), Point(-0.1,-0.6), 1, 0, 0);
+  drawTriangle(new Point(0.1,0.5),new Point(0.2,-0.6), new Point(-0.1,-0.6), 1, 0, 0);
   flushPDF();
 
 
   initPDF("poincare-triangle3.pdf");
   drawUnitCircle();
-  drawTriangle(Point(0.0,1),Point(1,-0.0010), Point(0,0), 1, 0, 0);
+  drawTriangle(new Point(0.0,1),new Point(1,-0.0010), new Point(0,0), 1, 0, 0);
   flushPDF();
 
   initPDF("poincare-triangle4.pdf");
   drawUnitCircle();
-  drawTriangle(Point(0.0,1),Point(1,0), Point(-0.866,-0.5), 1, 0, 0);
+  drawTriangle(new Point(0.0,1),new Point(1,0), new Point(-0.866,-0.5), 1, 0, 0);
   flushPDF();
 
 
   initPDF("poincare.pdf");
   drawUnitCircle();
 
-  //drawEdge(Point(0.5,0.5), Point(-0.6,-0.6));
+  //drawEdge(new Point(0.5,0.5), new Point(-0.6,-0.6));
 
-  /* drawLine(Point(0.5,0.5), Point(0.8,-0.3));
-     drawLine(Point(-0.5,0.2), Point(0.3,-0.1));
-     drawLine(Point(0.5,0.5), Point(0.2,0.5));
-     drawLine(Point(0.1,0.5), Point(0.2,0.5));
-     drawLine(Point(0.25,-0.5), Point(0.9,0.7));
-     drawLine(Point(-0.1,0.5), Point(0.2,-0.5));
+  /* drawLine(new Point(0.5,0.5), new Point(0.8,-0.3));
+     drawLine(new Point(-0.5,0.2), new Point(0.3,-0.1));
+     drawLine(new Point(0.5,0.5), new Point(0.2,0.5));
+     drawLine(new Point(0.1,0.5), new Point(0.2,0.5));
+     drawLine(new Point(0.25,-0.5), new Point(0.9,0.7));
+     drawLine(new Point(-0.1,0.5), new Point(0.2,-0.5));
   */
 
-  /*drawEdge( Point(0.8,-0.3),Point(0.5,0.5));
-    drawEdge(Point(-0.5,0.2), Point(0.3,-0.1));
-    drawEdge(Point(0.5,0.5), Point(0.2,0.5));
-    drawEdge(Point(0.1,0.5), Point(0.2,0.5));
+  /*drawEdge( new Point(0.8,-0.3),new Point(0.5,0.5));
+    drawEdge(new Point(-0.5,0.2), new Point(0.3,-0.1));
+    drawEdge(new Point(0.5,0.5), new Point(0.2,0.5));
+    drawEdge(new Point(0.1,0.5), new Point(0.2,0.5));
   */
 
-  /* drawTriangle(Point(0.8,-0.3),Point(0.5,0.5), Point(-0.61,-0.6));
-     drawTriangle(Point(-0.5,0.3),Point(0.5,0.5), Point(-0.61,-0.6),0,1,0);
-     drawTriangle(Point(0.8,-0.3),Point(0.2,-0.6), Point(-0.61,-0.6), 1, 0, 0);
-     drawTriangle(Point(0.8,-0.3),Point(0.2,-0.6), Point(-0.61,-0.6), 1, 0, 0);
-     drawTriangle(Point(-0.5,-0.76),Point(0.2,-0.6), Point(-0.61,-0.6), 1, 1, 0);
+  /* drawTriangle(new Point(0.8,-0.3),new Point(0.5,0.5), new Point(-0.61,-0.6));
+     drawTriangle(new Point(-0.5,0.3),new Point(0.5,0.5), new Point(-0.61,-0.6),0,1,0);
+     drawTriangle(new Point(0.8,-0.3),new Point(0.2,-0.6), new Point(-0.61,-0.6), 1, 0, 0);
+     drawTriangle(new Point(0.8,-0.3),new Point(0.2,-0.6), new Point(-0.61,-0.6), 1, 0, 0);
+     drawTriangle(new Point(-0.5,-0.76),new Point(0.2,-0.6), new Point(-0.61,-0.6), 1, 1, 0);
   */
 
   /*
     int max= 13;
     for(unsigned int k=0; k < (max-1); k++)
-    drawTriangle(Point(1,0), Point(cos(k*134/(double)max), sin(k*134/(double)max)),
-    Point(cos((k+1)*134/(double)max), sin((k+1)*134/(double)max)),
+    drawTriangle(new Point(1,0), new Point(cos(k*134/(double)max), sin(k*134/(double)max)),
+    new Point(cos((k+1)*134/(double)max), sin((k+1)*134/(double)max)),
     0.2, k/(double)max,  (max-k)/(double)max);
   */
 
