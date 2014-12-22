@@ -26,8 +26,19 @@
 #include "cairoPoincare.h"
 
 
+/* geodesic midpoint in C++
+    double cx,cy,c_r;
+    computeCircleParameters(&a, &b, &cx, &cy, &c_r);
+    std::complex<double> c = std::complex<double>(cx,cy);
+    double D_theta = std::arg(c);
+    double D_r = std::abs(c);
+    //std::cout<<"theta = "<<D_theta<<", r = "<<D_r<<std::endl;
+    drawPointCairo(cr, new Point(std::polar(D_r-c_r, D_theta)));
+*/
 
 struct Point : point {
+
+  Point() {}
 
   Point(double xx, double yy) { X = xx; Y = yy; }
 

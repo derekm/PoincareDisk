@@ -172,6 +172,101 @@ void computeOmegaPoints(double const *const cx, double const *const cy, double c
 
 
 /**
+ * Compute circle-line intersect for a given line and the unit circle.
+ */
+void computeCircleLineIntersect(const double r, struct point const *const p1, struct point const *const p2,
+                                struct point *const meet1, struct point *const meet2)
+{
+	// Lua code
+    //dx = l.p2.x - l.p1.x
+    //dy = l.p2.y - l.p1.y
+    //dr = math.sqrt(dx^2 + dy^2)
+    //D = l.p1.x*l.p2.y - l.p2.x*l.p1.y
+    //numer1 = D * dy
+    //numer3 = math.sqrt(self.r^2 * dr^2 - D^2)
+    //numer2 = sign(dy)*dx * numer3
+    //denom = dr^2
+    //x1 = (numer1 + numer2) / denom
+    //x2 = (numer1 - numer2) / denom
+    //numer1 = -(D * dx)
+    //numer2 = math.abs(dy) * numer3
+    //y1 = (numer1 + numer2) / denom
+    //y2 = (numer1 - numer2) / denom
+    //return { vec2( x1, y1 ), vec2( x2, y2 ) }
+
+	const double dx = p2->X - p1->X;
+	const double dy = p2->Y - p1->Y;
+	const double dr = sqrt(pow(dx, 2.) + pow(dy, 2.));
+	const double D = p1->X * p2->Y - p2->X * p1->Y;
+	      double numer1 = D * dy;
+	const double numer3 = sqrt(pow(r, 2.) * pow(dr, 2.) - pow(D, 2.));
+	      double numer2 = (dy < 0 ? -1 : 1) * dx * numer3;
+	const double denom = pow(dr, 2.);
+
+	meet1->X = (numer1 + numer2) / denom;
+	meet2->X = (numer1 - numer2) / denom;
+
+	numer1 = -(D * dx);
+	numer2 = abs(dy) * numer3;
+
+	meet1->Y = (numer1 + numer2) / denom;
+	meet2->Y = (numer1 - numer2) / denom;
+}
+
+
+/**
+ * Compute the omega points from an arbitrary/assumed midpoint.
+ */
+void computeOmegaPointsFromMidpoint(struct point const *const m,
+                                    struct point *const pole1, struct point *const pole2,
+                                    struct point *const omega1, struct point *const omega2)
+{
+	const double phi = fmod(atan2(m->Y, m->X) + 2*M_PI, 2*M_PI);
+
+	double polar1, polar2;
+	if (phi < M_PI/2) {
+		polar1 = phi + M_PI/2;
+		polar2 = phi + M_PI + M_PI/2;
+	} else if (phi > M_PI + M_PI/2) {
+		polar1 = phi - (M_PI + M_PI/2);
+		polar2 = phi - M_PI/2;
+	} else {
+		polar1 = phi + M_PI/2;
+		polar2 = phi - M_PI/2;
+	}
+
+	pole1->X = cos(polar1);
+	pole1->Y = sin(polar1);
+	pole2->X = cos(polar2);
+	pole2->Y = sin(polar2);
+
+	struct point meet1a, meet1b;
+	computeCircleLineIntersect(1., pole1, m, &meet1a, &meet1b);
+
+	struct point meet2a, meet2b;
+	computeCircleLineIntersect(1., pole2, m, &meet2a, &meet2b);
+
+	const double meet1a_phi = fmod(atan2(meet1a.Y, meet1a.X) + 2*M_PI, 2*M_PI);
+	if (meet1a_phi == polar1) {
+		omega1->X = meet1b.X;
+		omega1->Y = meet1b.Y;
+	} else {
+		omega1->X = meet1a.X;
+		omega1->Y = meet1a.Y;
+	}
+
+	const double meet2a_phi = fmod(atan2(meet2a.Y, meet2a.X) + 2*M_PI, 2*M_PI);
+	if (meet2a_phi == polar2) {
+		omega2->X = meet2b.X;
+		omega2->Y = meet2b.Y;
+	} else {
+		omega2->X = meet2a.X;
+		omega2->Y = meet2a.Y;
+	}
+}
+
+
+/**
  * Compute the angles of the intersect points from the perspective of the
  * intersecting circle, since that is the perspective from which cairo_arc()
  * draws.
@@ -190,6 +285,12 @@ void computeIntersectAngles(double const *const cx, double const *const cy, doub
   *phi2 = itheta + dphi;
 }
 
+void computeMidpoint(double const *const cx, double const *const cy, double const *const r,
+                     double *const R, double *const theta)
+{
+  *R = sqrt(pow(*cx, 2.) + pow(*cy, 2.)) - *r;
+  *theta = atan2(*cy, *cx);
+}
 
 /**
  * Draw the hyperbolic line through a and b.
@@ -249,12 +350,12 @@ void drawLine(struct point const *const a, struct point const *const b, bool wit
  * @param b second point.
  * @param withPoint if true, points are displayed.
  */
-void internaldrawEdge(struct point const *const a, struct point const *const b, bool withPoint)
+void internaldrawEdgeCairo(cairo_t *cr, struct point const *const a, struct point const *const b, bool withPoint)
 {
   if (withPoint)
     {
-      drawPoint(a);
-      drawPoint(b);
+      drawPointCairo(cr, a);
+      drawPointCairo(cr, b);
     }
 
   const double ax=a->X, ay=a->Y, bx=b->X, by=b->Y;
@@ -264,8 +365,8 @@ void internaldrawEdge(struct point const *const a, struct point const *const b, 
   //Near-aligned points -> straight segment.
   if (not(result))
     {
-      cairo_move_to (cairo, cX(ax),cY(ay));
-      cairo_line_to (cairo, cX(bx),cY(by));
+      cairo_move_to (cr, cX(ax),cY(ay));
+      cairo_line_to (cr, cX(bx),cY(by));
     }
   else
     {
@@ -280,18 +381,20 @@ void internaldrawEdge(struct point const *const a, struct point const *const b, 
 
       if (theta > theta2)
 	if ( theta - theta2 > M_PI)
-	  cairo_arc(cairo, cX(cx),cY(cy), r*RAD ,theta, theta2);
+	  cairo_arc(cr, cX(cx),cY(cy), r*RAD ,theta, theta2);
 	else
-	  cairo_arc_negative(cairo, cX(cx),cY(cy), r*RAD ,theta, theta2);
+	  cairo_arc_negative(cr, cX(cx),cY(cy), r*RAD ,theta, theta2);
       else
 	if ( theta2 - theta < M_PI)
-	  cairo_arc(cairo, cX(cx),cY(cy), r*RAD ,theta, theta2);
+	  cairo_arc(cr, cX(cx),cY(cy), r*RAD ,theta, theta2);
 	else
-	  cairo_arc_negative(cairo, cX(cx),cY(cy), r*RAD ,theta, theta2);
+	  cairo_arc_negative(cr, cX(cx),cY(cy), r*RAD ,theta, theta2);
     }
 }
-
-
+void internaldrawEdge(struct point const *const a, struct point const *const b, bool withPoint)
+{
+  internaldrawEdgeCairo(cairo, a, b, withPoint);
+}
 
 /**
  * Main method to draw an hyperbolic edge between a and b
@@ -300,16 +403,18 @@ void internaldrawEdge(struct point const *const a, struct point const *const b, 
  * @param b second point
  * @param withPoints if true, points are displayed.
  */
+void drawEdgeCairo(cairo_t *cr, struct point const *const a, struct point const *const b, const bool withPoints)
+{
+  cairo_set_source_rgba (cr, 0, 0.0, 1, 0.8);
+  cairo_set_line_width (cr, EDGEWIDTH);
+
+  internaldrawEdgeCairo(cr,a,b,withPoints);
+  cairo_stroke(cr);
+}
 void drawEdge(struct point const *const a, struct point const *const b, const bool withPoints)
 {
-  cairo_set_source_rgba (cairo, 0, 0.0, 1, 0.8);
-  cairo_set_line_width (cairo, EDGEWIDTH);
-
-  internaldrawEdge(a,b,withPoints);
-  cairo_stroke(cairo);
+  drawEdgeCairo(cairo, a, b, withPoints);
 }
-
-
 /**
  * Draw an hyperbolic triangle with vertices (a,b,c)..
  *
